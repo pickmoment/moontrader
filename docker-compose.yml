@@ -1,0 +1,13 @@
+version: "3"
+services:
+    moontrader:
+        image: "moontrader:dev"
+        build:
+            context: .
+            dockerfile: Dockerfile
+        hostname: moontrader
+        stdin_open: true
+        tty: true
+        working_dir: '/moontrader-dev'
+        volumes:
+            - ".:/moontrader-dev"
