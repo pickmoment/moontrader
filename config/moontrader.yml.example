@@ -2,6 +2,8 @@
 ---
 
 moontrader:
+  yuanta:
+    url: simul.tradarglobal.api.com
 
 ### Toggle application level debug (does not toggle framework debugging)
 # debug: false

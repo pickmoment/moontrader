@@ -1,19 +1,49 @@
 
+import logging
 from cement import App, TestApp, init_defaults
 from cement.core.exc import CaughtSignal
 from .core.exc import MoonTraderAppError
+
 from .controllers.base import Base
+from .controllers.world_futures import WorldFutures
+
+from .core.yuanta import Session
+from .core.xasession import Session as ebestSession, setLogger as ebestSetLogger
 
 # configuration defaults
 CONFIG = init_defaults('moontrader')
-CONFIG['moontrader']['foo'] = 'bar'
 
+def extend_ebest(app):
+    ebestSetLogger(app.log)
+    app.log.info('Extending eBest API')
+    config = app.config.get('moontrader', 'ebest')
+    ebest = ebestSession(config['url'], config['port'])
+    ebest.login(config['id'], config['pw'], config['cert'])
+    app.log.info('Server Time: %s' % ebest.heartbeat().content)
+    app.extend('ebest', ebest)
+
+def extend_yuanta(app):
+    app.log.info('Extending Yuanta API')
+    config = app.config.get('moontrader', 'yuanta')
+    yuanta = Session()
+    yuanta.connect(config['url'], config['path'])
+    result = yuanta.login(config['id'], config['pw'], config['cert'])
+    if result[0] == 2:
+        app.log.info('Success login')
+    else:
+        app.log.info('Fail login -> %s:%s' % result)
+
+    app.extend('yuanta', yuanta)
 
 class MoonTraderApp(App):
     """Moon Trader primary application."""
 
     class Meta:
         label = 'moontrader'
+
+        hooks = [
+            ('post_setup', extend_ebest)
+        ]
 
         # configuration defaults
         config_defaults = CONFIG
@@ -42,7 +72,8 @@ class MoonTraderApp(App):
 
         # register handlers
         handlers = [
-            Base
+            Base,
+            WorldFutures
         ]
 
 

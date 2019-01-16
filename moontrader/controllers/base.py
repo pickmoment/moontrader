@@ -4,7 +4,7 @@ from cement.utils.version import get_version_banner
 from ..core.version import get_version
 
 VERSION_BANNER = """
-MyApp Does Amazing Things! %s
+Moon Trader %s
 %s
 """ % (get_version(), get_version_banner())
 
@@ -14,7 +14,7 @@ class Base(Controller):
         label = 'base'
 
         # text displayed at the top of --help output
-        description = 'MyApp Does Amazing Things!'
+        description = 'Moon Trader'
 
         # text displayed at the bottom of --help output
         epilog = 'Usage: moontrader command1 --foo bar'
@@ -33,28 +33,3 @@ class Base(Controller):
 
         self.app.args.print_help()
 
-
-    @ex(
-        help='example sub command1',
-
-        # sub-command level arguments. ex: 'moontrader command1 --foo bar'
-        arguments=[
-            ### add a sample foo option under subcommand namespace
-            ( [ '-f', '--foo' ],
-              { 'help' : 'notorious foo option',
-                'action'  : 'store',
-                'dest' : 'foo' } ),
-        ],
-    )
-    def command1(self):
-        """Example sub-command."""
-
-        data = {
-            'foo' : 'bar',
-        }
-
-        ### do something with arguments
-        if self.app.pargs.foo is not None:
-            data['foo'] = self.app.pargs.foo
-
-        self.app.render(data, 'command1.jinja2')

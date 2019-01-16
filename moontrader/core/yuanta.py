@@ -58,11 +58,9 @@ class SessionEventHandler:
 
     def OnLogin(self, result, msg):
         if result == 2:
-            print('로그인 성공')
             self.code = result
             self.msg = None
         else:
-            print('로그인 실패', result, msg)
             self.code = result
             self.msg = msg
 
@@ -88,7 +86,8 @@ class SessionEventHandler:
         self.msg = None
 
     def OnReceiveSystemMessage(self, n_id, msg):
-        print('SystemMessage', n_id, msg)
+        # print('SystemMessage', n_id, msg)
+        pass
 
     def process_data(self, req_id, tr_id):
         results = []
@@ -156,13 +155,12 @@ class Session:
         if result != 1000:
             raise Exception('로그인 요청 실패')
         self.waiting()
-        return self.api.code
+        return (self.api.code, self.api.msg)
 
     def connect(self, url=DEFAULT_URL, path=DEFAULT_PATH):
         result = self.api.YOA_Initial(url, path)
         if result != 1000:
             raise Exception('연결 실패')
-        print('연결 성공')
         return result
 
     def disconnect(self):
@@ -193,8 +191,8 @@ class Session:
             eng_name = self.api.YOA_GetCodeInfoByIndex(market_type, 3, i)
             market = self.api.YOA_GetCodeInfoByIndex(market_type, 4, i)
             # if market == '111' and 'CL' in cd:  # 해외선물
-            if market == '111':
-                code = {'cd':cd, 'name':name}
+            if market != '112':
+                code = {'market': market, 'cd':cd, 'name':name}
                 codes.append(code)
 
         return codes
