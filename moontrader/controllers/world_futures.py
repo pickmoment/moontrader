@@ -105,7 +105,7 @@ class WorldFutures(Controller):
         if response and response.content and response.has_cts:
             save_option = '-s' if self.app.pargs.save else ''
             last_option = ' --last {}'.format(last_date) if last_date else ''
-            next_command = 'moontrader {} candle {} {} {} --date {} --time {}{}'.format(save_option, code, period_type, minute, response._cts_map['cts_date'], response._cts_map['cts_time'], last_option)
+            next_command = 'moontrader {} candle {} {} -p {} --date {} --time {}{}'.format(save_option, code, period_type, minute, response._cts_map['cts_date'], response._cts_map['cts_time'], last_option)
             print(next_command)
 
 
