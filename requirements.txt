@@ -4,3 +4,4 @@ pyyaml
 colorlog
 pypiwin32
 pony
+tqdm

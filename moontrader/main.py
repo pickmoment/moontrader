@@ -6,21 +6,13 @@ from .core.exc import MoonTraderAppError
 
 from .controllers.base import Base
 from .controllers.world_futures import WorldFutures
+from .controllers.scenario import Scenario
 
 from .core.yuanta import Session
 from .core.xasession import Session as ebestSession, setLogger as ebestSetLogger
 
 # configuration defaults
 CONFIG = init_defaults('moontrader')
-
-def extend_ebest(app):
-    ebestSetLogger(app.log)
-    app.log.info('Extending eBest API')
-    config = app.config.get('moontrader', 'ebest')
-    ebest = ebestSession(config['url'], config['port'])
-    ebest.login(config['id'], config['pw'], config['cert'])
-    app.log.info('Server Time: %s' % ebest.heartbeat().content)
-    app.extend('ebest', ebest)
 
 def extend_yuanta(app):
     app.log.info('Extending Yuanta API')
@@ -41,9 +33,9 @@ class MoonTraderApp(App):
     class Meta:
         label = 'moontrader'
 
-        hooks = [
-            ('post_setup', extend_ebest)
-        ]
+        # hooks = [
+        #     ('post_setup', extend_ebest)
+        # ]
 
         # configuration defaults
         config_defaults = CONFIG
@@ -73,7 +65,8 @@ class MoonTraderApp(App):
         # register handlers
         handlers = [
             Base,
-            WorldFutures
+            WorldFutures,
+            Scenario
         ]
 
 

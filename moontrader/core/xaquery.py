@@ -8,6 +8,7 @@ import logging
 log = logging.getLogger()
 
 def setLogger(logger):
+	global log
 	log = logger
 
 class _XAQueryEvents:
@@ -22,12 +23,13 @@ class _XAQueryEvents:
 		self.msg = None
 
 	def OnReceiveData(self, szTrCode):
+		log.debug('[OnReceiveData] szTrCode:{}'.format(szTrCode))
 		self.status = 1
 
 	def OnReceiveMessage(self, systemError, messageCode, message):
 		self.code = str(messageCode)
 		self.msg = str(message)
-		log.debug("OnReceiveMessage", self.code, self.msg)
+		log.debug("[OnReceiveMessage] systemError:{}, messageCode:{}, message:{}".format(systemError, messageCode, message))
 
 class Query:
 	_in_block = 'InBlock'
@@ -44,15 +46,19 @@ class Query:
 		self.query.LoadFromResFile("Res/" + type + ".res")
 		self.type = type;
 
+
 	def request(self, input, output, cts=None):	
 		self.content = []
 
 		self._out_block = output['block']
 		self._out_cols = output['cols']
+		has_cts = False
 		for k,v in input.items():
+			if 'cts_' in k:
+				has_cts = True
 			self.query.SetFieldData(self.type + self._in_block, k, 0, v)
 
-		self._query_request(False)
+		self._query_request(has_cts)
 		self._wait_content()
 		self._update_content()
 		if cts:
@@ -61,6 +67,7 @@ class Query:
 			self._update_cts()
 
 		return self
+
 
 	def request_next(self):
 		self.content = []
@@ -82,14 +89,16 @@ class Query:
 	def _query_request(self, is_cts):
 		requestCode = self.query.Request(is_cts)
 		if requestCode < 0:
-			log.critical(requestCode)
+			log.error('[_query_request] requestCode:{}, is_cts:{}'.format(requestCode, is_cts))
 			return self		
+
 
 	def _wait_content(self):
 		while self.query.status == 0:
 			pythoncom.PumpWaitingMessages()
 			time.sleep(0.1)
 		self.query.status = 0
+
 
 	def _update_content(self):
 		row_count = self.query.GetBlockCount(self.type + self._out_block)
@@ -98,6 +107,7 @@ class Query:
 			self.content.append(row)
 			for col in self._out_cols:
 				row[col] = self.query.GetFieldData(self.type + self._out_block, col, i)		
+
 
 	def _update_cts(self):
 		self.has_cts = False

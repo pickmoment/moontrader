@@ -8,6 +8,7 @@ import logging
 log = logging.getLogger()
 
 def setLogger(logger):
+    global log
     log = logger
     querySetLogger(logger)
 
@@ -23,12 +24,13 @@ class _XASessionEvents:
     def OnLogin(self, code, msg):
         self.code = str(code)
         self.msg = str(msg)
+        log.debug('[OnLogin] code:{}, msg:{}'.format(code, msg))
 
     def OnLogout(self):
-        log.debug("OnLogout method is called")
+        log.debug("[OnLogout] method is called")
 
     def OnDisconnect(self):
-        log.debug("OnDisconnect method is called")
+        log.debug("[OnDisconnect] method is called")
 
 class Session:
     def __init__(self, url, port):
@@ -45,10 +47,10 @@ class Session:
             time.sleep(0.1)
 
         if self.session.code == "0000":
-            log.info("로그인 성공")
+            log.debug("로그인 성공")
             return True
         else:
-            log.critical("로그인 실패 : %s" % xacom.parseErrorCode(self.session.code))
+            log.error("로그인 실패 : %s" % xacom.parseErrorCode(self.session.code))
             return False
 
     def logout(self):
@@ -57,6 +59,7 @@ class Session:
                 session.logout()
         """
         self.session.DisconnectServer()
+        log.debug('Request DisconnectServer')
 
     def account(self):
         """계좌 정보를 반환한다.
@@ -94,9 +97,15 @@ class Session:
         )
         return response
 
-    def candle_minute(self, code, minute):
+    def candle_minute(self, code, minute, date=None, time=None):
+        input_param = {'shcode': code, 'ncnt': minute}
+        if date:
+            input_param['cts_date'] = date
+        if time:
+            input_param['cts_time'] = time
+        log.debug('[candle_minute] input: {}'.format(input_param))
         response = Query('o3103').request(
-            input = {'shcode': code, 'ncnt': minute}, 
+            input = input_param, 
             output = {
                 'block': 'OutBlock1',
                 'cols': ('date', 'time', 'open', 'high', 'low', 'close', 'volume')
@@ -105,5 +114,20 @@ class Session:
                 'block': 'OutBlock',
                 'cols': ('cts_date', 'cts_time')
             } 
+        )
+        return response
+
+
+    def candle_day(self, code, start_day, end_day, cts_date=None):
+        input_param = {'shcode': code, 'gubun': '0', 'sdate': start_day, 'edate': end_day}
+        if cts_date:
+            input_param['cts_date'] = cts_date
+        log.debug('[candle_day] input: {}'.format(input_param))
+        response = Query('o3108').request(
+            input = input_param, 
+            output = {
+                'block': 'OutBlock1',
+                'cols': ('date', 'open', 'high', 'low', 'close', 'volume')
+            }
         )
         return response
