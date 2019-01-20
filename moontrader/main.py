@@ -37,6 +37,11 @@ class MoonTraderApp(App):
         #     ('post_setup', extend_ebest)
         # ]
 
+        config_dirs = [
+            'c:/Users/Lenovo/',
+            './'
+        ]
+
         # configuration defaults
         config_defaults = CONFIG
 

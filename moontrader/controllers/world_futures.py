@@ -1,12 +1,14 @@
 from cement import Controller, ex
-from ..core.db import ebest as db_ebest
-from ..core.db import candles as db_candle
+from ..core.db import db_adapter
 from ..core.xasession import Session as ebestSession, setLogger as ebestSetLogger
 import time
 from tqdm import tqdm
+from pony.orm import Database
 
 month_map = {'F': 1, 'G': 2, 'H': 3, 'J': 4, 'K': 5, 'M': 6, 
              'N': 7, 'Q': 8, 'U': 9, 'V': 10, 'X': 11, 'Z': 12}
+
+codes_currency = {'AD': 'Australian Dollar', 'BP': 'British Pound', 'BR': 'Brazilian Real'}
 
 class WorldFutures(Controller):
     ebest = None
@@ -24,21 +26,23 @@ class WorldFutures(Controller):
 
     @ex(help='get code list')
     def codes(self):
-        self.ebest = self.connect_ebest()
+        self.connect_ebest()
         response = self.ebest.codes()
         rows = response.content
         self.app.log.info(rows)
 
         if self.app.pargs.save:
             data_conf = self.app.config.get('moontrader', 'data')
-            db_ebest.bind(data_conf['dir'])
-            db_ebest.Code.drop_table(with_all_data=True)
-            db_ebest.init()
-            db_ebest.insert_codes(rows)
+            db_ebest = Database()
+            db_adapter.define_ebest(db_ebest)
+            db_adapter.bind(db_ebest, data_conf['dir'], 'ebest')
+            db_adapter.drop_codes()
+            db_adapter.init(db_ebest)
+            db_adapter.insert_codes(rows)
 
 
     @ex(help='get candle list',
-        arguments=[(['code'],{}), (['period_type'],{'help': 'M(minute), D(day)'}), 
+        arguments=[(['code'],{}), (['period_type'],{'help': 'm(minute), d(day)'}), 
             (['--period', '-p'], {'help': 'period for minute', 'action': 'store', 'dest': 'period'}),
             (['--date', '--start'], {'help': 'start date', 'action': 'store', 'dest': 'cts_date'}),
             (['--time'], {'help': 'start time', 'action': 'store', 'dest': 'cts_time'}),
@@ -55,9 +59,11 @@ class WorldFutures(Controller):
         loop_count = self.app.pargs.loop_count
         loop_count = int(loop_count if loop_count else 200)
 
-        if period_type == 'M':
+        self.connect_ebest()
+
+        if period_type == 'm':
             self.candle_minute(code, period, cts_date, cts_time, last_date, loop_count)
-        elif period_type == 'D':
+        elif period_type == 'd':
             self.candle_day(code, cts_date, last_date)
 
 
@@ -77,28 +83,25 @@ class WorldFutures(Controller):
         loop_count = self.app.pargs.loop_count
         loop_count = int(loop_count if loop_count else 200)
 
-        self.ebest = self.connect_ebest()
-
+        self.connect_ebest()
+    
         for code in codes:
             self.candle_minute(code, period, cts_date, cts_time, last_date, loop_count)
+            time.sleep(1)
 
 
     def candle_day(self, code, start_day, end_day):
-        self.app.log.info('[candle_day] code:{}, start_day:{}, end_day:{}'.format(code, start_day, end_day))
-
-        self.ebest = self.connect_ebest()
+        self.app.log.debug('[candle_day] code:{}, start_day:{}, end_day:{}'.format(code, start_day, end_day))
 
         for i in tqdm(range(1)):
             response = self.ebest.candle_day(code, start_day, end_day)
 
-        self.treat_candle_save(True, response, code, 'D', '')
+        self.treat_candle_save(True, response, code, 'd', '')
 
 
     def candle_minute(self, code, minute, cts_date, cts_time, last_date, loop_count):
         self.app.log.info('[candle_minute] code:{}, minute:{}, cts_date:{}, cts_time:{}, last_date:{}, loop_count:{}'.format(code, minute, cts_date, cts_time, last_date, loop_count))
-        period_type = 'M'
-
-        self.ebest = self.connect_ebest()
+        period_type = 'm'
         
         response = self.candle_minute_call(code, minute, cts_date, cts_time, last_date, loop_count)
 
@@ -113,11 +116,11 @@ class WorldFutures(Controller):
         for i in tqdm(range(loop_count)):
             if i == 0:
                 response = self.ebest.candle_minute(code, minute, cts_date, cts_time)
-                response = self.treat_candle_response(True, response, code, 'M', minute, last_date)
+                response = self.treat_candle_response(True, response, code, 'm', minute, last_date)
             else:
                 if response and response.content and response.has_cts:
                     response = response.request_next()
-                    response = self.treat_candle_response(False, response, code, 'M', minute, last_date)
+                    response = self.treat_candle_response(False, response, code, 'm', minute, last_date)
                 else:
                     break
 
@@ -151,9 +154,11 @@ class WorldFutures(Controller):
     def save_candle_data(self, rows, code, period_type, period, need_init=False):
         if need_init:
             data_conf = self.app.config.get('moontrader', 'data')
-            db_candle.bind(data_conf['dir'], '{}_{}{}'.format(code, period_type, period))
-            db_candle.init()
-        db_candle.save_candles(rows)        
+            db_candle = Database()
+            db_adapter.define_candle(db_candle)
+            db_adapter.bind(db_candle, data_conf['dir'], '{}_{}{}'.format(code, period_type, period))
+            db_adapter.init(db_candle)
+        db_adapter.save_candles(rows)        
 
 
     def connect_ebest(self):
@@ -163,5 +168,5 @@ class WorldFutures(Controller):
         ebest = ebestSession(config['url'], config['port'])
         ebest.login(config['id'], config['pw'], config['cert'])
         # self.app.log.info('Server Time: %s' % ebest.heartbeat().content)
-        return ebest
+        self.ebest = ebest
 
