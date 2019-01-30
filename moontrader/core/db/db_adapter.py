@@ -2,10 +2,12 @@ from pony.orm import *
 from decimal import Decimal
 from datetime import datetime, timedelta
 from .candles import create_Candle
-from .ebest import create_Code
+from .ebest import create_FutureCode, create_StockCode, create_StockTheme
 
 Candle = None
-Code = None
+FutureCode = None
+StockCode = None
+StockTheme = None
 
 def bind(db, data_dir, file_name):
     file_path = '{}{}.sqlite'.format(data_dir, file_name)
@@ -25,8 +27,13 @@ def define_candle(db):
     Candle = create_Candle(db)
 
 def define_ebest(db):
-    global Code
-    Code = create_Code(db)
+    global FutureCode
+    FutureCode = create_FutureCode(db)
+    global StockCode
+    StockCode = create_StockCode(db)
+    global StockTheme
+    StockTheme = create_StockTheme(db)
+
 
 
 @db_session
@@ -51,9 +58,25 @@ def save_candles(rows):
     
 
 @db_session
-def insert_codes(rows):
+def insert_future_codes(rows):
     for row in rows:
-        Code(cd=row['Symbol'], nm=row['SymbolNm'])   
+        FutureCode(cd=row['Symbol'], nm=row['SymbolNm'])   
 
-def drop_codes():
-    Code.drop_table(with_all_data=True)
+def drop_future_codes():
+    FutureCode.drop_table(with_all_data=True)
+
+@db_session
+def insert_stock_codes(rows):
+    for row in rows:
+        StockCode(cd=row['shcode'], nm=row['hname'], exp_cd=row['expcode'], market=row['gubun'], etf=row['etfgubun'])   
+
+def drop_stock_codes():
+    StockCode.drop_table(with_all_data=True)
+
+@db_session
+def insert_stock_themes(rows):
+    for row in rows:
+        StockTheme(cd=row['tmcode'], nm=row['tmname'])   
+
+def drop_stock_themes():
+    StockTheme.drop_table(with_all_data=True)

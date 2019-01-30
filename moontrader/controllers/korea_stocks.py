@@ -6,12 +6,12 @@ from tqdm import tqdm
 from pony.orm import Database
 
 
-class WorldFutures(Controller):
+class KoreaStocks(Controller):
     ebest = None
 
     class Meta:
-        label = 'futures'
-        stacked_type = 'embedded'
+        label = 'stocks'
+        stacked_type = 'nested'
         stacked_on = 'base'
 
         arguments = [
@@ -23,7 +23,7 @@ class WorldFutures(Controller):
     @ex(help='get code list')
     def codes(self):
         self.connect_ebest()
-        response = self.ebest.codes()
+        response = self.ebest.stock_codes()
         rows = response.content
         self.app.log.info(rows)
 
@@ -32,9 +32,26 @@ class WorldFutures(Controller):
             db_ebest = Database()
             db_adapter.define_ebest(db_ebest)
             db_adapter.bind(db_ebest, data_conf['dir'], 'ebest')
-            db_adapter.drop_future_codes()
+            db_adapter.drop_stock_codes()
             db_adapter.init(db_ebest)
-            db_adapter.insert_future_codes(rows)
+            db_adapter.insert_stock_codes(rows)
+
+
+    @ex(help='get theme list')
+    def themes(self):
+        self.connect_ebest()
+        response = self.ebest.stock_themes()
+        rows = response.content
+        self.app.log.info(rows)
+
+        if self.app.pargs.save:
+            data_conf = self.app.config.get('moontrader', 'data')
+            db_ebest = Database()
+            db_adapter.define_ebest(db_ebest)
+            db_adapter.bind(db_ebest, data_conf['dir'], 'ebest')
+            db_adapter.drop_stock_themes()
+            db_adapter.init(db_ebest)
+            db_adapter.insert_stock_themes(rows)
 
 
     @ex(help='get candle list',

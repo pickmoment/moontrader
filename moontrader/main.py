@@ -7,6 +7,7 @@ from .core.exc import MoonTraderAppError
 from .controllers.base import Base
 from .controllers.world_futures import WorldFutures
 from .controllers.scenario import Scenario
+from .controllers.korea_stocks import KoreaStocks
 
 from .core.yuanta import Session
 from .core.xasession import Session as ebestSession, setLogger as ebestSetLogger
@@ -71,7 +72,8 @@ class MoonTraderApp(App):
         handlers = [
             Base,
             WorldFutures,
-            Scenario
+            Scenario,
+            KoreaStocks
         ]
 
 

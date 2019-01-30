@@ -131,3 +131,23 @@ class Session:
             }
         )
         return response
+
+    def stock_codes(self):
+        response = Query("t8430").request(
+            input = {'gubun': '0'}, 
+            output = {
+                'block': 'OutBlock',
+                'cols': ('hname', 'shcode', 'expcode', 'etfgubun', 'gubun')
+            }
+        )
+        return response
+
+    def stock_themes(self):
+        response = Query("t8425").request(
+            input = {'dummy': ''}, 
+            output = {
+                'block': 'OutBlock',
+                'cols': ('tmname', 'tmcode')
+            }
+        )
+        return response        
