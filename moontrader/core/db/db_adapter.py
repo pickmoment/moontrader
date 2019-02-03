@@ -107,22 +107,28 @@ def insert_stock_sectors(rows):
 def drop_stock_sectors():
     StockSector.drop_table(with_all_data=True)
 
+@db_session
+def delete_stock_theme_code_map(theme):
+    StockThemeCodeMap.select(lambda t: t.theme == theme).delete(bulk=True)
 
 @db_session
-def insert_stock_theme_code_map(theme, row):
+def insert_stock_theme_code_map(theme, rows): 
     for row in rows:
         StockThemeCodeMap(theme=theme, code=row['shcode'])
 
 def drop_stock_theme_code_map():
     StockThemeCodeMap.drop_table(with_all_data=True)
 
+@db_session
+def delete_stock_sector_code_map(sector):
+    StockSectorCodeMap.select(lambda t: t.sector == sector).delete(bulk=True)
 
 @db_session
-def insert_stock_sector_code_map(sector, row):
+def insert_stock_sector_code_map(sector, rows):
     for row in rows:
         StockSectorCodeMap(sector=sector, code=row['shcode'])
 
-def drop_stock_theme_code_map():
+def drop_stock_sector_code_map():
     StockSectorCodeMap.drop_table(with_all_data=True)
 
 
@@ -131,6 +137,14 @@ def get_stock_codes():
     return StockCode.select()[:]
 
 
+@db_session
+def get_stock_themes():
+    return StockTheme.select()[:]
+
+
+@db_session
+def get_stock_sectors():
+    return StockSector.select()[:]
 
 
 @db_session

@@ -25,8 +25,9 @@ def create_StockTheme(db):
 def create_StockThemeCodeMap(db):
     class StockThemeCodeMap(db.Entity):
         _table_ = 'stock_theme_codes'
-        theme = PrimaryKey(str)
+        theme = Required(str)
         code = Required(str)
+        PrimaryKey(theme, code)
     return StockThemeCodeMap
 
 
@@ -41,8 +42,9 @@ def create_StockSector(db):
 def create_StockSectorCodeMap(db):
     class StockSectorCodeMap(db.Entity):
         _table_ = 'stock_sector_codes'
-        sector = PrimaryKey(str)
+        sector = Required(str)
         code = Required(str)
+        PrimaryKey(sector, code)
     return StockSectorCodeMap  
 
 

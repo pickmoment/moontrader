@@ -61,6 +61,47 @@ class KoreaStocks(Controller):
             db_adapter.insert_stock_themes(rows)
 
 
+    @ex(help='get all themes code map senario file', 
+        arguments=[(['file_name'], {'help': 'senario file name'})])
+    def all_themes_map(self):
+        file_name = self.app.pargs.file_name
+        self.app.log.info('file_name: {}'.format(file_name))
+
+        data_conf = self.app.config.get('moontrader', 'data')
+        db_ebest = Database()
+        db_adapter.define_korea_stock(db_ebest)
+        db_adapter.bind(db_ebest, data_conf['dir'], DB_FILE_NAME)
+        db_adapter.init(db_ebest)
+        themes = db_adapter.get_stock_themes()
+        
+        db_adapter.drop_stock_theme_code_map()
+
+        with open(file_name, 'w') as sfile:
+            for theme in themes:
+                cmd = 'moontrader stocks -s theme-map {}'.format(theme.cd)
+                print(cmd)
+                sfile.write(cmd + '\n')
+
+
+    @ex(help='get theme code map list', 
+        arguments=[(['theme'], {})])
+    def theme_map(self):
+        theme = self.app.pargs.theme
+        self.connect_ebest()
+        response = self.ebest.stock_prices_by_theme(theme)
+        rows = response.content
+        self.app.log.info(rows)
+
+        if self.app.pargs.save:
+            data_conf = self.app.config.get('moontrader', 'data')
+            db_ebest = Database()
+            db_adapter.define_korea_stock(db_ebest)
+            db_adapter.bind(db_ebest, data_conf['dir'], DB_FILE_NAME)
+            db_adapter.init(db_ebest)
+            db_adapter.delete_stock_theme_code_map(theme)
+            db_adapter.insert_stock_theme_code_map(theme, rows)
+
+
     @ex(help='get sector list')
     def sectors(self):
         self.connect_ebest()
@@ -78,6 +119,58 @@ class KoreaStocks(Controller):
             db_adapter.insert_stock_sectors(rows)
 
 
+    @ex(help='get all sectors code map senario file', 
+        arguments=[(['file_name'], {'help': 'senario file name'})])
+    def all_sectors_map(self):
+        file_name = self.app.pargs.file_name
+        self.app.log.info('file_name: {}'.format(file_name))
+
+        data_conf = self.app.config.get('moontrader', 'data')
+        db_ebest = Database()
+        db_adapter.define_korea_stock(db_ebest)
+        db_adapter.bind(db_ebest, data_conf['dir'], DB_FILE_NAME)
+        db_adapter.init(db_ebest)
+        sectors = db_adapter.get_stock_sectors()
+        
+        db_adapter.drop_stock_sector_code_map()
+
+        with open(file_name, 'w') as sfile:
+            for sector in sectors:
+                cmd = 'moontrader stocks -s sector-map {}'.format(sector.cd)
+                print(cmd)
+                sfile.write(cmd + '\n')
+
+
+    @ex(help='get sector code map list', 
+        arguments=[(['sector'], {})])
+    def sector_map(self):
+        sector = self.app.pargs.sector
+        self.connect_ebest()
+
+        if self.app.pargs.save:
+            data_conf = self.app.config.get('moontrader', 'data')
+            db_ebest = Database()
+            db_adapter.define_korea_stock(db_ebest)
+            db_adapter.bind(db_ebest, data_conf['dir'], DB_FILE_NAME)
+            db_adapter.init(db_ebest)
+            db_adapter.delete_stock_sector_code_map(sector)
+
+        start_code = ''
+        while True:
+            response = self.ebest.stock_prices_by_sector(sector, start_code)
+            rows = response.content
+            self.app.log.info(rows)
+
+            if self.app.pargs.save:
+                db_adapter.insert_stock_sector_code_map(sector, rows)
+
+            if (len(rows) < 40):
+                break
+            else:
+                start_code = rows[-1]['shcode']
+                time.sleep(0.2)
+
+            
     @ex(help='get candle list',
         arguments=[(['code'],{}), 
             (['--start_date', '--start'], {'help': 'start date', 'action': 'store', 'dest': 'start_date'}),
@@ -109,13 +202,15 @@ class KoreaStocks(Controller):
         arguments=[(['file_name'], {'help': 'senario file name'}),
             (['--start_date', '--start'], {'help': 'start date', 'action': 'store', 'dest': 'start_date'}),
             (['--end_date', '--end'], {'help': 'end date', 'action': 'store', 'dest': 'end_date'}),
+            (['--short'], {'help': 'short period', 'action': 'store_true', 'dest': 'is_short'}),
             (['--loop'], {'help': 'loop count', 'action': 'store', 'dest': 'loop_count'})]    )
     def all_stock_candles(self):
         start_date = self.app.pargs.start_date
         end_date = self.app.pargs.end_date
         loop_count = self.app.pargs.loop_count
         file_name = self.app.pargs.file_name
-        self.app.log.info('start_date: {}, end_date: {}, loop: {}, file_name: {}'.format(start_date, end_date, loop_count, file_name))
+        is_short = self.app.pargs.is_short
+        self.app.log.info('start_date: {}, end_date: {}, loop: {}, file_name: {}, is_short: {}'.format(start_date, end_date, loop_count, file_name, is_short))
 
         data_conf = self.app.config.get('moontrader', 'data')
         db_ebest = Database()
@@ -127,6 +222,10 @@ class KoreaStocks(Controller):
         param_start = ' --start {}'.format(start_date) if start_date else ''
         param_end = ' --end {}'.format(end_date) if end_date else ''
         param_loop = ' --loop {}'.format(loop_count) if loop_count else ''
+
+        if is_short:
+            param_start = ' --start {yesterday}'
+            param_end = ' --end {today}'
 
         with open(file_name, 'w') as sfile:
             for code in codes:
@@ -183,29 +282,6 @@ class KoreaStocks(Controller):
             db_adapter.bind(db_candle, data_conf['dir'], DB_FILE_NAME)
             db_adapter.init(db_candle)
         db_adapter.save_stock_candles(rows, code)       
-
-
-    @ex(help='get multi code candle list',
-        arguments=[(['codes'],{}), (['minute'],{}), 
-            (['--date', '--start'], {'help': 'start date', 'action': 'store', 'dest': 'cts_date'}),
-            (['--time'], {'help': 'start time', 'action': 'store', 'dest': 'cts_time'}),
-            (['--last', '--end'], {'help': 'last date', 'action': 'store', 'dest': 'last_date'}),
-            (['--loop'], {'help': 'loop count', 'action': 'store', 'dest': 'loop_count'})]
-    )
-    def codes_candle(self):
-        codes = self.app.pargs.codes.strip().split(',')
-        period = self.app.pargs.minute
-        cts_date = self.app.pargs.cts_date
-        cts_time = self.app.pargs.cts_time
-        last_date = self.app.pargs.last_date
-        loop_count = self.app.pargs.loop_count
-        loop_count = int(loop_count if loop_count else 200)
-
-        self.connect_ebest()
-    
-        for code in codes:
-            self.candle_minute(code, period, cts_date, cts_time, last_date, loop_count)
-            time.sleep(1)
 
 
     def connect_ebest(self):

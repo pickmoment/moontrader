@@ -181,3 +181,25 @@ class Session:
             } 
         )
         return response
+
+
+    def stock_prices_by_theme(self, theme):
+        response = Query("t1537").request(
+            input = {'tmcode': theme}, 
+            output = {
+                'block': 'OutBlock1',
+                'cols': ['shcode', 'open', 'high', 'low', 'price', 'volume', 'value', 'marketcap']
+            }
+        )
+        return response      
+
+
+    def stock_prices_by_sector(self, sector, start_code=''):
+        response = Query("t1516").request(
+            input = {'upcode': sector, 'gubun': '', 'shcode': start_code}, 
+            output = {
+                'block': 'OutBlock1',
+                'cols': ['shcode', 'open', 'high', 'low', 'price', 'volume', 'value', 'total', 'sojinrate', 'beta', 'perx', 'frgsvolume', 'orgsvolume']
+            }
+        )
+        return response              
