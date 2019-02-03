@@ -14,3 +14,20 @@ def create_Candle(db):
         day = Required(str, index=True)
 
     return Candle
+
+
+def create_StockCandle(db):
+    class StockCandle(db.Entity):
+        _table_ = 'stock_candles'
+        dt = Required(str)
+        cd = Required(str)
+        open = Required(Decimal, 12, 2)
+        high = Required(Decimal, 12, 2)
+        low = Required(Decimal, 12, 2)
+        close = Required(Decimal, 12, 2)
+        volume = Required(int)
+        amount = Optional(Decimal, 12, 2)
+        adj_rate = Optional(float)
+        PrimaryKey(dt,cd)
+
+    return StockCandle

@@ -82,7 +82,7 @@ class Session:
             input = {}, 
             output = {
                 'block': 'OutBlock',
-                'cols': ('dt', 'time')
+                'cols': ['dt', 'time']
             }
         )
         return response
@@ -92,7 +92,7 @@ class Session:
             input = {'gubun': ''}, 
             output = {
                 'block': 'OutBlock',
-                'cols': ('Symbol', 'SymbolNm')
+                'cols': ['Symbol', 'SymbolNm']
             }
         )
         return response
@@ -108,11 +108,11 @@ class Session:
             input = input_param, 
             output = {
                 'block': 'OutBlock1',
-                'cols': ('date', 'time', 'open', 'high', 'low', 'close', 'volume')
+                'cols': ['date', 'time', 'open', 'high', 'low', 'close', 'volume']
             },
             cts = {
                 'block': 'OutBlock',
-                'cols': ('cts_date', 'cts_time')
+                'cols': ['cts_date', 'cts_time']
             } 
         )
         return response
@@ -127,7 +127,7 @@ class Session:
             input = input_param, 
             output = {
                 'block': 'OutBlock1',
-                'cols': ('date', 'open', 'high', 'low', 'close', 'volume')
+                'cols': ['date', 'open', 'high', 'low', 'close', 'volume']
             }
         )
         return response
@@ -137,7 +137,7 @@ class Session:
             input = {'gubun': '0'}, 
             output = {
                 'block': 'OutBlock',
-                'cols': ('hname', 'shcode', 'expcode', 'etfgubun', 'gubun')
+                'cols': ['hname', 'shcode', 'expcode', 'etfgubun', 'gubun']
             }
         )
         return response
@@ -147,7 +147,37 @@ class Session:
             input = {'dummy': ''}, 
             output = {
                 'block': 'OutBlock',
-                'cols': ('tmname', 'tmcode')
+                'cols': ['tmname', 'tmcode']
             }
         )
         return response        
+
+
+    def stock_sectors(self):
+        response = Query("t8424").request(
+            input = {'gubun1': ''}, 
+            output = {
+                'block': 'OutBlock',
+                'cols': ['hname', 'upcode']
+            }
+        )
+        return response 
+
+    
+    def stock_candle_day(self, code, start_day, end_day, cts_date=None):
+        input_param = {'shcode': code, 'gubun': '2', 'sdate': start_day, 'edate': end_day, 'comp_yn': 'N'}
+        if cts_date:
+            input_param['cts_date'] = cts_date
+        log.debug('[stock_candle_day] input: {}'.format(input_param))
+        response = Query('t8413').request(
+            input = input_param, 
+            output = {
+                'block': 'OutBlock1',
+                'cols': ['date', 'open', 'high', 'low', 'close', 'jdiff_vol', 'value', 'rate']
+            },
+            cts = {
+                'block': 'OutBlock',
+                'cols': ['cts_date']
+            } 
+        )
+        return response

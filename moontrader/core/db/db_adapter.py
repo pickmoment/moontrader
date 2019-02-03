@@ -2,12 +2,18 @@ from pony.orm import *
 from decimal import Decimal
 from datetime import datetime, timedelta
 from .candles import create_Candle
-from .ebest import create_FutureCode, create_StockCode, create_StockTheme
+from .ebest import create_FutureCode
+from .korea_stock import create_StockCode, create_StockTheme, create_StockCandle, create_StockSector, create_StockThemeCodeMap, create_StockSectorCodeMap
 
 Candle = None
 FutureCode = None
+
 StockCode = None
 StockTheme = None
+StockThemeCodeMap = None
+StockSector = None
+StockSectorCodeMap = None
+StockCandle = None
 
 def bind(db, data_dir, file_name):
     file_path = '{}{}.sqlite'.format(data_dir, file_name)
@@ -26,14 +32,25 @@ def define_candle(db):
     global Candle
     Candle = create_Candle(db)
 
-def define_ebest(db):
-    global FutureCode
-    FutureCode = create_FutureCode(db)
+
+def define_korea_stock(db):
+    global StockCandle
+    StockCandle = create_StockCandle(db)
     global StockCode
     StockCode = create_StockCode(db)
     global StockTheme
     StockTheme = create_StockTheme(db)
+    global StockSector
+    StockSector = create_StockSector(db)
+    global StockThemeCodeMap
+    StockThemeCodeMap = create_StockThemeCodeMap(db)
+    global StockSectorCodeMap
+    StockSectorCodeMap = create_StockSectorCodeMap(db)
 
+
+def define_ebest(db):
+    global FutureCode
+    FutureCode = create_FutureCode(db)
 
 
 @db_session
@@ -80,3 +97,55 @@ def insert_stock_themes(rows):
 
 def drop_stock_themes():
     StockTheme.drop_table(with_all_data=True)
+
+
+@db_session
+def insert_stock_sectors(rows):
+    for row in rows:
+        StockSector(cd=row['upcode'], nm=row['hname'])   
+
+def drop_stock_sectors():
+    StockSector.drop_table(with_all_data=True)
+
+
+@db_session
+def insert_stock_theme_code_map(theme, row):
+    for row in rows:
+        StockThemeCodeMap(theme=theme, code=row['shcode'])
+
+def drop_stock_theme_code_map():
+    StockThemeCodeMap.drop_table(with_all_data=True)
+
+
+@db_session
+def insert_stock_sector_code_map(sector, row):
+    for row in rows:
+        StockSectorCodeMap(sector=sector, code=row['shcode'])
+
+def drop_stock_theme_code_map():
+    StockSectorCodeMap.drop_table(with_all_data=True)
+
+
+@db_session
+def get_stock_codes():
+    return StockCode.select()[:]
+
+
+
+
+@db_session
+def save_stock_candles(rows, code):
+    for row in rows:
+        dt = row['date']
+
+        candle = StockCandle.get(dt=dt, cd=code)
+        if candle:
+            candle.open = row['open']
+            candle.high = row['high']
+            candle.low = row['low']
+            candle.close = row['close']
+            candle.volume = row['jdiff_vol']
+            candle.amount = row['value']
+            candle.adj_rate = row['rate']
+        else:
+            StockCandle(dt=dt, cd=code, open=row['open'], high=row['high'], low=row['low'], close=row['close'], volume=row['jdiff_vol'], amount=row['value'], adj_rate=row['rate'])
