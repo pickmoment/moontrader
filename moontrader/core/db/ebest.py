@@ -7,23 +7,6 @@ def create_FutureCode(db):
         nm = Required(str)
     return FutureCode
 
-def create_StockCode(db):
-    class StockCode(db.Entity):
-        _table_ = 'stock_codes'
-        cd = PrimaryKey(str)
-        nm = Required(str)
-        exp_cd = Required(str)
-        market = Required(str)
-        etf = Required(str)
-    return StockCode
-
-def create_StockTheme(db):
-    class StockTheme(db.Entity):
-        _table_ = 'stock_themes'
-        cd = PrimaryKey(str)
-        nm = Required(str)
-    return StockTheme    
-
 
 future_month_map = {1: 'F', 2: 'G', 3: 'H', 4: 'J', 5: 'K', 6: 'M', 
              7: 'N', 8: 'Q', 9: 'U', 10: 'V', 11: 'X', 12: 'Z'}

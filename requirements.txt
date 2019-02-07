@@ -5,3 +5,4 @@ colorlog
 pypiwin32
 pony
 tqdm
+html2text

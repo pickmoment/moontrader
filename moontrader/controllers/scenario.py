@@ -1,6 +1,12 @@
 from cement import Controller, ex
 import subprocess
 from datetime import datetime, timedelta
+import time
+from multiprocessing import Pool
+import logging
+from functools import partial
+
+log = logging.getLogger()
 
 class Scenario(Controller):
     class Meta:
@@ -10,9 +16,12 @@ class Scenario(Controller):
 
     @ex(help='execute scenario',
         arguments=[(['command_file'], {}),
+            (['--workers'], {'help': 'workers size', 'action': 'store', 'dest': 'workers'}),
             (['--next'], {'help': 'next file', 'action': 'store_true', 'dest': 'exec_next'})]
     )
     def scenario(self):
+        global log
+        log = self.app.log
         today = datetime.now()
         yesterday = datetime.now() - timedelta(days=1)
         week = datetime.now() - timedelta(weeks=1)
@@ -26,20 +35,39 @@ class Scenario(Controller):
 
         command_file = self.app.pargs.command_file
         exec_next = self.app.pargs.exec_next
+        workers = int(self.app.pargs.workers) if self.app.pargs.workers else 1
 
         commands = open(command_file, 'r').readlines()
-        while commands:
-            next_commands = []
+
+        if workers > 1:
+            with Pool(workers) as pool:
+                pool.map(partial(execute, param_dict=param_dict, exec_next=exec_next), commands)
+        else:
             for command in commands:
-                command = command.strip().format(**param_dict)
-                self.app.log.info('[EXECUTE] {}'.format(command))
+                execute(command, param_dict, exec_next)
+
+
+
+def execute(command, param_dict, exec_next):
+    while command:
+        next_command = None
+        command = command.strip().format(**param_dict)
+        log.info('[EXECUTE] {}'.format(command))
+        result = ''
+        while True:
+            try:
                 result = subprocess.check_output(command, shell=True)
-                if exec_next:
-                    next_command = result.decode("utf-8").strip()
-                    if next_command:
-                        next_commands.append(next_command)
+                break
+            except KeyboardInterrupt as ki:
+                break
+            except Exception as ex:
+                log.error('Error: {}'.format(ex))
+                time.sleep(1)
+        if exec_next:
+            next_command = result.decode("utf-8").strip()
 
-            commands = None
+        command = None
 
-            if next_commands:
-                commands = next_commands
+        if next_command:
+            command = next_command
+        

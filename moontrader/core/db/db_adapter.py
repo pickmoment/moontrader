@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from .candles import create_Candle
 from .ebest import create_FutureCode
 from .korea_stock import create_StockCode, create_StockTheme, create_StockCandle, create_StockSector, create_StockThemeCodeMap, create_StockSectorCodeMap
+from .dart import create_Disclosure
 
 Candle = None
 FutureCode = None
@@ -14,6 +15,8 @@ StockThemeCodeMap = None
 StockSector = None
 StockSectorCodeMap = None
 StockCandle = None
+
+Disclosure = None
 
 def bind(db, data_dir, file_name):
     file_path = '{}{}.sqlite'.format(data_dir, file_name)
@@ -51,6 +54,11 @@ def define_korea_stock(db):
 def define_ebest(db):
     global FutureCode
     FutureCode = create_FutureCode(db)
+
+
+def define_dart(db):
+    global Disclosure
+    Disclosure = create_Disclosure(db)
 
 
 @db_session
@@ -163,3 +171,27 @@ def save_stock_candles(rows, code):
             candle.adj_rate = row['rate']
         else:
             StockCandle(dt=dt, cd=code, open=row['open'], high=row['high'], low=row['low'], close=row['close'], volume=row['jdiff_vol'], amount=row['value'], adj_rate=row['rate'])
+
+
+@db_session
+def save_dart_disclosures(rows):
+    cm = {
+        'id': 'rcp_no',
+        'title': 'rpt_nm',
+        'corp_cd': 'crp_cd',
+        'corp_nm': 'crp_nm',
+        'corp_cls': 'crp_cls',
+        'dt': 'rcp_dt',
+        'writer': 'flr_nm',
+        'remark': 'rmk'
+    }
+
+    for row in rows:
+        id = row[cm['id']]
+
+        disclosure = Disclosure.get(id=id)
+        if not disclosure:
+            param = {}
+            for key in cm:
+                param[key] = row[cm[key]]
+            Disclosure(**param)

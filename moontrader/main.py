@@ -8,6 +8,7 @@ from .controllers.base import Base
 from .controllers.world_futures import WorldFutures
 from .controllers.scenario import Scenario
 from .controllers.korea_stocks import KoreaStocks
+from .controllers.dart import Dart
 
 from .core.yuanta import Session
 from .core.xasession import Session as ebestSession, setLogger as ebestSetLogger
@@ -73,7 +74,8 @@ class MoonTraderApp(App):
             Base,
             WorldFutures,
             Scenario,
-            KoreaStocks
+            KoreaStocks,
+            Dart
         ]
 
 
